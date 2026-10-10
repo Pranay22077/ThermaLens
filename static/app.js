@@ -76,6 +76,9 @@ const MAP_STYLES={
 /* Ward labels need light text on dark grounds and dark text on light grounds. */
 const LABEL_INK={dark:["#E7EDF3","rgba(0,0,0,.75)"],light:["#1B2733","rgba(255,255,255,.85)"],
                  satellite:["#FFFFFF","rgba(0,0,0,.72)"],streets:["#1B2733","rgba(255,255,255,.85)"]};
+/* Ward outlines must retain contrast when the raster basemap changes. */
+const BORDER_INK={dark:"rgba(255,255,255,.48)",light:"rgba(16,35,63,.42)",
+                  satellite:"rgba(255,255,255,.82)",streets:"rgba(16,35,63,.58)"};
 
 /* ── Utilities ── */
 async function api(p,opts){
@@ -171,23 +174,6 @@ function initMap(){
   st.map.addControl(new maplibregl.AttributionControl({compact:true}),"bottom-right");
   st.map.addControl(new maplibregl.ScaleControl({maxWidth:84,unit:"metric"}),"bottom-right");
 
-  /* A basemap switch tears down every source and layer, so the data layers,
-     the feature states and the label colours all have to be rebuilt.
-     Use 'idle' event to ensure style is fully loaded and ready. */
-  let styleChangeInProgress = false;
-  st.map.on("style.load",()=>{
-    console.log("style.load event fired");
-    styleChangeInProgress = true;
-  });
-  
-  st.map.on("idle",()=>{
-    if(styleChangeInProgress){
-      console.log("Map idle after style change - rebuilding layers");
-      styleChangeInProgress = false;
-      rebuildDataLayers();
-    }
-  });
-  
   st.map.on("error",e=>{if(e&&e.error)console.warn("map:",e.error.message||e.error);});
 
   wireMapEvents();
@@ -210,7 +196,31 @@ function switchStyle(key){
     const on=b.dataset.style===key;
     b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));
   });
-  st.map.setStyle(MAP_STYLES[key]);
+
+  /* Change only the raster tile URLs. Replacing the complete MapLibre style
+     destroys GeoJSON sources and layers, while source updates preserve ward
+     fills, borders, labels, feature state and event handlers. */
+  const style=MAP_STYLES[key],m=st.map;
+  const base=m.getSource("base");
+  if(base&&base.setTiles)base.setTiles(style.sources.base.tiles);
+
+  const hasRef=!!style.sources.ref;
+  if(hasRef){
+    const ref=m.getSource("ref");
+    if(ref&&ref.setTiles)ref.setTiles(style.sources.ref.tiles);
+  }
+  if(m.getLayer("ref"))m.setLayoutProperty("ref","visibility",hasRef?"visible":"none");
+
+  /* The ward source/layers stay alive, but their contrast must follow the
+     newly selected raster mode. */
+  if(m.getLayer("ward-borders"))
+    m.setPaintProperty("ward-borders","line-color",buildBorderColor());
+  if(m.getLayer("ward-labels")){
+    const ink=LABEL_INK[st.currentStyle]||LABEL_INK.light;
+    m.setPaintProperty("ward-labels","text-color",ink[0]);
+    m.setPaintProperty("ward-labels","text-halo-color",ink[1]);
+  }
+  m.triggerRepaint();
 }
 
 /* ── Flat / Raised. Height encodes the risk band; the legend says so. ── */
@@ -400,6 +410,13 @@ function buildExtrusionHeight(){
   else base=["match",["get",l==="mort"?"_mi":l==="hosp"?"_hi":"_bi"],4,500,3,350,2,200,1,80,30];
   return ["case",["boolean",["feature-state","dim"],false],6,base];
 }
+function buildBorderColor(){
+  const borderInk=BORDER_INK[st.currentStyle]||BORDER_INK.light;
+  return ["case",
+    ["boolean",["feature-state","selected"],false],"#8FBEEA",
+    ["boolean",["feature-state","hover"],false],"rgba(231,237,243,.8)",
+    borderInk];
+}
 
 function addWardLayers(){
   const m=st.map;
@@ -446,14 +463,11 @@ function addWardLayers(){
         "fill-extrusion-height-transition":{duration:400}}});
 
     m.addLayer({id:"ward-borders",type:"line",source:"wards",paint:{
-      "line-color":["case",
-        ["boolean",["feature-state","selected"],false],"#8FBEEA",
-        ["boolean",["feature-state","hover"],false],"rgba(231,237,243,.62)",
-        "rgba(231,237,243,.16)"],
+      "line-color":buildBorderColor(),
       "line-width":["case",
         ["boolean",["feature-state","selected"],false],2.6,
         ["boolean",["feature-state","hover"],false],1.6,
-        0.7]}});
+        1.1]}});
 
     const ink=LABEL_INK[st.currentStyle]||LABEL_INK.light;
     m.addLayer({id:"ward-labels",type:"symbol",source:"wards",minzoom:11.2,layout:{
@@ -463,6 +477,7 @@ function addWardLayers(){
       "text-opacity":["case",["boolean",["feature-state","dim"],false],0.25,1]}});
 
     console.log("Ward layers added successfully");
+    m.triggerRepaint();
     
     applyFilterDim();
     if(st._selectedWardId!=null)selectWard(st._selectedWardId);
