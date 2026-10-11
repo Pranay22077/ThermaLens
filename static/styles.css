@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   TAPAS — Design system v3 (Light Theme)
+   ThermaLens — Design system v3 (Light Theme)
    Thermal Assessment & Protection Analytics System
 
    Direction: a clean, professional instrument console with a white/light
@@ -27,12 +27,12 @@
 
   /* ── Interactive. Clean blue accent ── */
   --sig:#1467f0;
-  --sig-hi:#0d4fc4;
+  --sig-hi:#2a6fe8;
   --sig-dim:#e8f0fe;
   --sig-rule:rgba(20,103,240,.35);
   --focus:#1467f0;
 
-  /* ── Risk ramp. Original TAPAS colors (IMD watch convention).
+  /* ── Risk ramp. Original ThermaLens colors (IMD watch convention).
          These five hexes are duplicated as constants in app.js; they must stay
          byte-identical or the map and the legend will disagree. ── */
   --low:#2e9e5b;

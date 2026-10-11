@@ -21,7 +21,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 
 /* ── Risk ramp. Byte-identical to the --low/--mod/--high/--sev/--nodata
       custom properties in styles.css. Changing one without the other makes
-      the map disagree with its own legend. Original TAPAS colors preserved. ── */
+      the map disagree with its own legend. Original ThermaLens colors preserved. ── */
 const BCOL={"Low":"#2e9e5b","Moderate":"#e8a51d","High":"#f0722c","Severe":"#dd3a3a","Insufficient":"#c7d0db"};
 const _WCOL=BCOL;
 const _WBAND=["Low","Moderate","High","Severe"];
@@ -313,7 +313,7 @@ function paintCityMarkers(){
   
   /* Update each marker's border color based on worst risk from watch data.
      Matches original logic: Math.max(worst_htsi, worst_mort) 
-     Default color before watch loads: #1467f0 (original TAPAS blue) */
+     Default color before watch loads: #1467f0 (original ThermaLens blue) */
   st._watchCities.forEach(c=>{
     const meta=st._cityMarkerMeta[c.city];
     if(!meta)return;
@@ -1737,7 +1737,7 @@ async function outboxHTML(){
 
   const examples=_OUTBOX_EXAMPLES.map(ex=>`<div class="sample">
     <div class="sample-lab">Example message format — ${esc(ex.city)}, not a sent alert</div>
-    <pre>[TAPAS ALERT] ${esc(ex.city)} ${esc(ex.ward)} - Heat escalation: High. HTSI ${ex.htsi}, UTCI ${ex.utci}C.
+    <pre>[THERMALENS ALERT] ${esc(ex.city)} ${esc(ex.ward)} - Heat escalation: High. HTSI ${ex.htsi}, UTCI ${ex.utci}C.
 -- Personal guidance --
 EN: Stay indoors 12-4pm | Drink water every hour | Check elderly
 HI: दोपहर 12-4 बजे घर के अंदर रहें | हर घंटे पानी पिएं

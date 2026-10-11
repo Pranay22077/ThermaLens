@@ -1,6 +1,6 @@
 "use strict";
 /* ═══════════════════════════════════════════════════════════════════════════
-   TAPAS — landing page
+   ThermaLens — landing page
    Runs after app.js. The dashboard boots in the background behind the landing
    overlay, so "Launch dashboard" is instant and the landing page can show
    real figures from the same API. It never calls anything the dashboard does
@@ -22,7 +22,7 @@
   function inApp(){return L.classList.contains("hidden");}
   function afterReady(fn){
     if(appReady)fn();
-    else document.addEventListener("tapas:ready",()=>fn(),{once:true});
+    else document.addEventListener("thermalens:ready",()=>fn(),{once:true});
   }
   function showApp(){
     L.classList.add("hidden");
@@ -61,7 +61,7 @@
   const appBrand=q(".topbar .brand");
   if(appBrand){
     appBrand.setAttribute("data-home","");appBrand.setAttribute("role","link");
-    appBrand.setAttribute("tabindex","0");appBrand.setAttribute("title","Back to TAPAS overview");
+    appBrand.setAttribute("tabindex","0");appBrand.setAttribute("title","Back to ThermaLens overview");
     const back=()=>{if(location.hash==="#dashboard")history.pushState({},"",location.pathname+location.search);showLanding();};
     appBrand.addEventListener("click",back);
     appBrand.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();back();}});
@@ -108,24 +108,86 @@
   /* Nav shadow and active section */
   const nav=q("#lNav");
   L.addEventListener("scroll",()=>nav.classList.toggle("scrolled",L.scrollTop>8),{passive:true});
-  const links=qa(".l-links a",L);
+  const links=qa(".l-links a[data-scroll], .l-mobile a[data-scroll]",L);
   const secIds=["why","capabilities","how","cities","alerts","faq"];
+  const secEls=secIds.map(id=>document.getElementById(id)).filter(Boolean);
+  let activeId=undefined,spyTick=false;
+  function spy(){
+    spyTick=false;
+    const top=L.getBoundingClientRect().top,line=nav.offsetHeight+L.clientHeight*.3;
+    let cur=null;
+    secEls.forEach(el=>{if(el.getBoundingClientRect().top-top<=line)cur=el.id;});
+    if(L.scrollTop+L.clientHeight>=L.scrollHeight-4)cur=secIds[secIds.length-1];
+    if(cur===activeId)return;
+    activeId=cur;
+    links.forEach(a=>{
+      const on=a.getAttribute("data-scroll")===cur;
+      a.classList.toggle("on",on);
+      if(on)a.setAttribute("aria-current","location");else a.removeAttribute("aria-current");
+    });
+  }
+  L.addEventListener("scroll",()=>{if(!spyTick){spyTick=true;requestAnimationFrame(spy);}},{passive:true});
+  window.addEventListener("resize",spy);
+  spy();
   if("IntersectionObserver" in window){
-    const spy=new IntersectionObserver(es=>{
-      es.forEach(en=>{
-        if(!en.isIntersecting)return;
-        links.forEach(a=>a.classList.toggle("on",a.getAttribute("data-scroll")===en.target.id));
-      });
-    },{root:L,rootMargin:"-45% 0px -50% 0px",threshold:0});
-    secIds.forEach(id=>{const el=document.getElementById(id);if(el)spy.observe(el);});
-    const hero=document.getElementById("top");
-    if(hero)new IntersectionObserver(es=>{if(es[0].isIntersecting)links.forEach(a=>a.classList.remove("on"));},{root:L,threshold:.5}).observe(hero);
-
     const rv=new IntersectionObserver(es=>{
       es.forEach(en=>{if(en.isIntersecting){en.target.classList.add("in");rv.unobserve(en.target);}});
     },{root:L,rootMargin:"0px 0px -8% 0px",threshold:.08});
     qa(".reveal",L).forEach(el=>rv.observe(el));
   }else{L.classList.add("no-js");}
+
+  /* ── Sign in dialog ──
+     No account service exists in this codebase, so the form never pretends to
+     authenticate. If the host page defines window.thermalensSignIn(credentials)
+     it is called (may return a promise); otherwise the user is told plainly. */
+  (function signIn(){
+    const modal=q("#signinModal"),form=q("#signinForm"),msg=q("#siMsg");
+    if(!modal||!form)return;
+    let opener=null;
+    const focusable=()=>qa("button,input",modal).filter(e=>!e.disabled&&e.offsetParent!==null);
+    function open(from){
+      opener=from||document.activeElement;closeMenu();
+      modal.hidden=false;L.classList.add("modal-open");msg.textContent="";msg.className="l-signin-msg";
+      requestAnimationFrame(()=>{modal.classList.add("open");q("#siEmail").focus();});
+    }
+    function close(){
+      modal.classList.remove("open");L.classList.remove("modal-open");
+      setTimeout(()=>{modal.hidden=true;},reduce?0:250);
+      if(opener&&opener.focus)opener.focus();
+    }
+    qa("[data-signin]",L).forEach(a=>{
+      a.addEventListener("click",e=>{e.preventDefault();open(a);});
+      a.addEventListener("keydown",e=>{if(e.key===" "){e.preventDefault();open(a);}});
+    });
+    qa("[data-close-signin]",modal).forEach(b=>b.addEventListener("click",close));
+    modal.addEventListener("click",e=>{if(e.target===modal)close();});
+    document.addEventListener("keydown",e=>{
+      if(modal.hidden)return;
+      if(e.key==="Escape")close();
+      if(e.key==="Tab"){
+        const f=focusable();if(!f.length)return;
+        const a=f[0],z=f[f.length-1];
+        if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus();}
+        else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus();}
+      }
+    });
+    q("#signinSkip").addEventListener("click",()=>{opener=null;close();enterApp();});
+    form.addEventListener("submit",async e=>{
+      e.preventDefault();
+      const email=q("#siEmail").value.trim(),password=q("#siPass").value;
+      if(!email||!password){msg.className="l-signin-msg err";msg.textContent="Enter your email and password.";return;}
+      if(typeof window.thermalensSignIn!=="function"){
+        msg.className="l-signin-msg err";
+        msg.textContent="Sign in is not connected to an account service yet. You can continue to the dashboard below.";
+        return;
+      }
+      try{
+        msg.className="l-signin-msg";msg.textContent="Signing in…";
+        await window.thermalensSignIn({email,password});
+        msg.textContent="Signed in.";close();
+      }catch(err){msg.className="l-signin-msg err";msg.textContent=(err&&err.message)||"Could not sign in.";}
+    });
+  })();
   q("#yr").textContent=new Date().getFullYear();
 
   /* ── Ramps share the dashboard's own constants, so they cannot drift ── */
@@ -392,7 +454,7 @@
           ctx.beginPath();ctx.arc(x,y,s*.62,0,6.2832);ctx.fill();
         }else{
           ctx.globalAlpha=.16+.62*Math.pow(cc,.7);
-          ctx.fillStyle="#3b5f94";
+          ctx.fillStyle="#6f97d4";
           const s=1.15+1.0*cc;
           ctx.fillRect(x-s/2,y-s/2,s,s);
         }
@@ -401,7 +463,7 @@
 
       /* Soft limb darkening for depth */
       g=ctx.createRadialGradient(cx-R*.2,cy-R*.25,R*.55,cx,cy,R);
-      g.addColorStop(0,"rgba(16,35,63,0)");g.addColorStop(1,"rgba(16,35,63,.13)");
+      g.addColorStop(0,"rgba(40,90,170,0)");g.addColorStop(1,"rgba(40,90,170,.08)");
       ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,6.2832);ctx.fill();
 
       /* City pins, drawn last so they sit on top and are clickable */
@@ -429,7 +491,7 @@
         if(ctx.roundRect)ctx.roundRect(tx,ty,tw,th,8);else ctx.rect(tx,ty,tw,th);
         ctx.fill();ctx.shadowColor="transparent";ctx.shadowBlur=0;ctx.shadowOffsetY=0;
         ctx.strokeStyle="rgba(208,216,226,.95)";ctx.lineWidth=1;ctx.stroke();
-        ctx.fillStyle="#10233f";ctx.fillText(p.name,tx+9,y+.5);
+        ctx.fillStyle="#1a3a6b";ctx.fillText(p.name,tx+9,y+.5);
         ctx.globalAlpha=1;
         if(cc>.3)hits.push({id:p.id,x0:x-12,y0:Math.min(ty,y-12),x1:tx+tw,y1:Math.max(ty+th,y+12)});
       }

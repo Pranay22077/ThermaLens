@@ -17,7 +17,7 @@
 <body>
 
 <!-- ═══════════════════════════ Landing page ═══════════════════════════ -->
-<div id="landing" aria-label="TAPAS overview">
+<div id="landing" aria-label="ThermaLens overview">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
@@ -50,6 +50,7 @@
       <a href="#cities" data-scroll="cities">Pilot cities</a>
       <a href="#alerts" data-scroll="alerts">Alerts</a>
       <a href="#faq" data-scroll="faq">FAQ</a>
+      <a href="#signin" class="l-signin" data-signin role="button">Sign in</a>
     </nav>
     <div class="l-nav-cta">
       <button class="l-btn primary sm" type="button" data-launch>Launch dashboard <svg class="i i-arrow" style="width:16px;height:16px"><use href="#i-arrow"/></svg></button>
@@ -63,6 +64,7 @@
     <a href="#cities" data-scroll="cities">Pilot cities</a>
     <a href="#alerts" data-scroll="alerts">Alerts</a>
     <a href="#faq" data-scroll="faq">FAQ</a>
+    <a href="#signin" class="l-signin" data-signin role="button">Sign in</a>
     <button class="l-btn primary" type="button" data-launch style="margin-top:14px">Launch dashboard</button>
   </div>
 </header>
@@ -112,11 +114,11 @@
       <span class="l-kicker">The problem</span>
       <h2 class="l-h2">A city average hides the street that is in danger.</h2>
       <p class="l-sub">Heat harms people unevenly. Two wards in the same city can face very different exposure, tree cover and health capacity on the same afternoon. A single citywide forecast cannot tell a health officer where to send help first.</p>
-      <div class="l-cta"><button class="l-btn ghost" type="button" data-scroll="capabilities">See what TAPAS models <svg class="i i-arrow" style="width:17px;height:17px"><use href="#i-arrow"/></svg></button></div>
+      <div class="l-cta"><button class="l-btn ghost" type="button" data-scroll="capabilities">See what ThermaLens models <svg class="i i-arrow" style="width:17px;height:17px"><use href="#i-arrow"/></svg></button></div>
     </div>
     <div class="l-why-list">
       <article class="l-why-card reveal"><span class="l-ico warm"><svg class="i"><use href="#i-map"/></svg></span><div><h3>Risk is local</h3><p>Each ward gets its own score from hazard, vulnerability, exposure and adaptive capacity, so hot spots stand out instead of averaging away.</p></div></article>
-      <article class="l-why-card reveal" style="--d:80ms"><span class="l-ico"><svg class="i"><use href="#i-therm"/></svg></span><div><h3>Air temperature is not the whole story</h3><p>Humidity, wind and solar radiation decide how hot the body feels. TAPAS reports the Universal Thermal Climate Index alongside air temperature.</p></div></article>
+      <article class="l-why-card reveal" style="--d:80ms"><span class="l-ico"><svg class="i"><use href="#i-therm"/></svg></span><div><h3>Air temperature is not the whole story</h3><p>Humidity, wind and solar radiation decide how hot the body feels. ThermaLens reports the Universal Thermal Climate Index alongside air temperature.</p></div></article>
       <article class="l-why-card reveal" style="--d:160ms"><span class="l-ico green"><svg class="i"><use href="#i-bell"/></svg></span><div><h3>Warnings must be understood to work</h3><p>Alerts go out by SMS and WhatsApp in English, Hindi and the local state language, with clear steps and an emergency line.</p></div></article>
     </div>
   </div>
@@ -207,7 +209,7 @@
     <div class="reveal">
       <span class="l-kicker">Alerts</span>
       <h2 class="l-h2">Clear guidance, in the language people read.</h2>
-      <p class="l-sub">When a ward escalates, TAPAS composes a short message with the band, the thermal reading and what to do next. Messages are delivered over SMS and WhatsApp through Twilio.</p>
+      <p class="l-sub">When a ward escalates, ThermaLens composes a short message with the band, the thermal reading and what to do next. Messages are delivered over SMS and WhatsApp through Twilio.</p>
       <ul class="l-list">
         <li><svg class="i"><use href="#i-check"/></svg><span><b>Personal guidance.</b> Practical steps such as staying indoors in the afternoon and drinking water every hour.</span></li>
         <li><svg class="i"><use href="#i-check"/></svg><span><b>Local language.</b> English and Hindi, plus the state language of each pilot city.</span></li>
@@ -218,7 +220,7 @@
     <div class="reveal" style="--d:100ms">
       <div class="l-phone"><div class="l-phone-in">
         <div class="l-phone-top"><span><svg class="i" style="width:15px;height:15px"><use href="#i-msg"/></svg>SMS and WhatsApp</span><span>Example format</span></div>
-        <div class="l-bubble"><span class="hd">[TAPAS ALERT]</span> <span class="tok">{city} {ward}</span> - Heat escalation: <span class="tok">{band}</span>. HTSI <span class="tok">{htsi}</span>, UTCI <span class="tok">{utci}</span>C.
+        <div class="l-bubble"><span class="hd">[THERMALENS ALERT]</span> <span class="tok">{city} {ward}</span> - Heat escalation: <span class="tok">{band}</span>. HTSI <span class="tok">{htsi}</span>, UTCI <span class="tok">{utci}</span>C.
 -- Personal guidance --
 EN: Stay indoors 12-4pm | Drink water every hour | Check elderly
 HI: दोपहर 12-4 बजे घर के अंदर रहें | हर घंटे पानी पिएं
@@ -273,6 +275,22 @@ Call 112/108 now.</div>
     <div class="l-legal"><span>&copy; <span id="yr"></span> ThermaLens. Risk bands follow the IMD watch colour convention.</span><span>Basemap tiles &copy; Esri. Map rendering by MapLibre GL.</span></div>
   </div>
 </footer>
+
+<!-- Sign in dialog -->
+<div class="l-modal" id="signinModal" role="dialog" aria-modal="true" aria-labelledby="signinTitle" hidden>
+  <div class="l-modal-card">
+    <button class="l-modal-x" type="button" data-close-signin aria-label="Close sign in"><svg class="i" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <h2 id="signinTitle">Sign in</h2>
+    <p class="l-sub">Access your ThermaLens workspace.</p>
+    <form id="signinForm" novalidate>
+      <label class="l-field">Email<input id="siEmail" name="email" type="email" autocomplete="username" required placeholder="you@city.gov.in"/></label>
+      <label class="l-field">Password<input id="siPass" name="password" type="password" autocomplete="current-password" required placeholder="Your password"/></label>
+      <button class="l-btn primary" type="submit">Sign in</button>
+      <p class="l-signin-msg" id="siMsg" role="status" aria-live="polite"></p>
+    </form>
+    <button class="l-signin-skip" type="button" id="signinSkip">Continue to dashboard without signing in</button>
+  </div>
+</div>
 </div>
 
 
